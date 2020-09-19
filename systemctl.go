@@ -24,6 +24,7 @@ package systemctl
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 )
 
@@ -43,10 +44,25 @@ func unitExist(name string) (bool, error) {
 	unitPaths := []string{
 		"/usr/lib/systemd/system/",
 		"/etc/systemd/system/",
-		"/usr/local/lib/systemd/system",
-		"/etc/systemd/user"}
+		"/usr/local/lib/systemd/system/",
+		"/etc/systemd/user/",
+		"/etc/systemd/system.control/",
+		"/run/systemd/system.control/",
+		"/run/systemd/transient/",
+		"/run/systemd/generator.early/",
+		"/etc/systemd/systemd.attached/",
+		"/run/systemd/system/",
+		"/run/systemd/systemd.attached/",
+		"/run/systemd/generator/",
+		"/lib/systemd/system/",
+		"/run/systemd/generator.late/",
+		"/usr/lib/systemd/user/"}
 
 	for _, unitPath := range unitPaths {
+
+		if _, err := os.Stat(unitPath); os.IsNotExist(err) {
+			continue
+		}
 
 		files, err := ioutil.ReadDir(unitPath)
 
