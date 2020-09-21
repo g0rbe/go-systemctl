@@ -33,7 +33,9 @@ Service provides a struct to store the unit's properties.
 WILL BE EXPANDED LATER!
 */
 type Service struct {
-	Name string
+	Name    string
+	Active  bool
+	Enabled bool
 }
 
 /*
@@ -83,29 +85,40 @@ func unitExist(name string) (bool, error) {
 /*
 Unit gives back Service.
 It checks whether a service with name exist.
+The struct saves the actual state when the function is called.
 */
 func Unit(name string) (Service, error) {
 
-	exist, err := unitExist(name)
+	if exist, err := unitExist(name); err != nil {
+		return Service{}, err
+	} else if exist != true {
+		return Service{}, fmt.Errorf("unit not exist: %s", name)
+	}
+
+	active, err := IsActive(name)
 
 	if err != nil {
 		return Service{}, err
 	}
 
-	if exist {
-		return Service{name}, nil
+	enabled, err := IsEnabled(name)
+
+	if err != nil {
+		return Service{}, err
 	}
 
-	return Service{}, fmt.Errorf("unit not exist: %s", name)
+	return Service{Name: name, Active: active, Enabled: enabled}, nil
 }
 
 /*
 IsActive checks if the given service is running.
 Returns true if the the given service is active, returns false otherwise.
 */
-func (s *Service) IsActive() (bool, error) {
+func IsActive(name string) (bool, error) {
 
-	output, err := exec.Command("/usr/bin/systemctl", "is-active", s.Name).CombinedOutput()
+	//if exist, err := unitExist(name); err
+
+	output, err := exec.Command("/usr/bin/systemctl", "is-active", name).CombinedOutput()
 
 	if err != nil {
 		return false, fmt.Errorf("failed to run systemctl: %s %s", output, err)
@@ -125,9 +138,9 @@ func (s *Service) IsActive() (bool, error) {
 IsEnabled check if the given service is enabled in systemd.
 Returns true if the the given service is enabled.
 */
-func (s *Service) IsEnabled() (bool, error) {
+func IsEnabled(name string) (bool, error) {
 
-	output, err := exec.Command("/usr/bin/systemctl", "is-enabled", s.Name).CombinedOutput()
+	output, err := exec.Command("/usr/bin/systemctl", "is-enabled", name).CombinedOutput()
 
 	if err != nil {
 		return false, fmt.Errorf("failed to run systemctl: %s %s", output, err)
@@ -219,6 +232,126 @@ Reload function reload the given service with systemctl.
 func (s *Service) Reload() error {
 
 	output, err := exec.Command("/usr/bin/systemctl", "reload", s.Name).CombinedOutput()
+
+	if err != nil {
+		return fmt.Errorf("%s %s", output, err)
+	}
+
+	return nil
+}
+
+/*
+EnableService function enables the given service in systemd.
+*/
+func EnableService(name string) error {
+
+	if exist, err := unitExist(name); err != nil {
+		return err
+	} else if exist != true {
+		return fmt.Errorf("unit not exist: %s", name)
+	}
+
+	output, err := exec.Command("/usr/bin/systemctl", "enable", name).CombinedOutput()
+
+	if err != nil {
+		return fmt.Errorf("%s %s", output, err)
+	}
+
+	return nil
+}
+
+/*
+DisableService function disable the given service in systemd.
+*/
+func DisableService(name string) error {
+
+	if exist, err := unitExist(name); err != nil {
+		return err
+	} else if exist != true {
+		return fmt.Errorf("unit not exist: %s", name)
+	}
+
+	output, err := exec.Command("/usr/bin/systemctl", "disable", name).CombinedOutput()
+
+	if err != nil {
+		return fmt.Errorf("%s %s", output, err)
+	}
+
+	return nil
+}
+
+/*
+StartService function start the given service with systemctl.
+*/
+func StartService(name string) error {
+
+	if exist, err := unitExist(name); err != nil {
+		return err
+	} else if exist != true {
+		return fmt.Errorf("unit not exist: %s", name)
+	}
+
+	output, err := exec.Command("/usr/bin/systemctl", "start", name).CombinedOutput()
+
+	if err != nil {
+		return fmt.Errorf("%s %s", output, err)
+	}
+
+	return nil
+}
+
+/*
+StopService function is stop the given service with systemctl.
+*/
+func StopService(name string) error {
+
+	if exist, err := unitExist(name); err != nil {
+		return err
+	} else if exist != true {
+		return fmt.Errorf("unit not exist: %s", name)
+	}
+
+	output, err := exec.Command("/usr/bin/systemctl", "stop", name).CombinedOutput()
+
+	if err != nil {
+		return fmt.Errorf("%s %s", output, err)
+	}
+
+	return nil
+}
+
+/*
+RestartService function restart the given service with systemctl.
+*/
+func RestartService(name string) error {
+
+	if exist, err := unitExist(name); err != nil {
+		return err
+	} else if exist != true {
+		return fmt.Errorf("unit not exist: %s", name)
+	}
+
+	output, err := exec.Command("/usr/bin/systemctl", "restart", name).CombinedOutput()
+
+	if err != nil {
+		return fmt.Errorf("%s %s", output, err)
+	}
+
+	return nil
+}
+
+/*
+ReloadService function reload the given service with systemctl.
+*/
+func ReloadService(name string) error {
+
+	if exist, err := unitExist(name); err != nil {
+		return err
+	} else if exist != true {
+		return fmt.Errorf("unit not exist: %s", name)
+	}
+
+	output, err := exec.Command("/usr/bin/systemctl", "reload", name).CombinedOutput()
 
 	if err != nil {
 		return fmt.Errorf("%s %s", output, err)
